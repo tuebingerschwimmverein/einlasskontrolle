@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
   <title>TSV Scanner</title>
   <style>
-    /* DEIN ORIGINAL STYLE */
+    /* DEIN ORIGINAL STYLE (Hier habe ich die Overlays wieder eingefügt) */
     body { font-family: 'Segoe UI', sans-serif; text-align: center; margin: 0; transition: background 0.3s; min-height: 100vh; background: #f4f4f4; }
     #header { padding: 15px; background: #515a6d; color: white; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
     #reader { width: 100%; max-width: 400px; margin: 10px auto; border-radius: 12px; overflow: hidden; border: 4px solid #ccc; background: #000; min-height: 300px; }
@@ -17,73 +17,109 @@
     .idle { background: #f4f4f4; color: #333; }
     .loading-state { background: #d1d8e2; color: #666; }
     .manual-area { margin: 15px; }
-    input { padding: 12px; border-radius: 8px; border: 2px solid #ccc; width: 100px; }
+    input { padding: 12px; border-radius: 8px; border: 2px solid #ccc; margin: 5px; }
     button.main { padding: 12px 20px; background: #515a6d; color: white; border: none; border-radius: 8px; font-weight: bold; }
+    .btn-group-view { padding: 8px 12px; background: #d1d8e2; color: #515a6d; border: none; border-radius: 6px; font-size: 0.8em; font-weight: bold; }
+    .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 1000; padding: 20px; box-sizing: border-box; overflow-y: auto; text-align: left; }
+    .close-btn { float: right; font-size: 2em; cursor: pointer; }
+    .search-result-item { padding: 10px; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center; }
   </style>
 </head>
 <body class="idle">
-  <div id="header"><span>TSV EINLASSKONTROLLE</span></div>
+  <div id="header">
+    <span>TSV SCANNER</span>
+    <button class="btn-group-view" onclick="showTodayAttendance()">👥 Gruppen</button>
+  </div>
   
   <div id="reader"></div>
   
   <div class="manual-area">
-    <input type="text" id="manualId" placeholder="ID..." inputmode="numeric">
+    <input type="text" id="manualId" placeholder="ID..." inputmode="numeric" style="width:80px;">
     <button class="main" onclick="checkManual()">Check</button>
+    <button onclick="openSearch()" style="background:none; border:none; color:#666; text-decoration:underline; display:block; margin: 10px auto;">Ausweis vergessen?</button>
   </div>
 
   <div id="result-text">Bereit</div>
 
+  <div id="groupOverlay" class="overlay">
+    <span class="close-btn" onclick="closeOverlay('groupOverlay')">&times;</span>
+    <h2>Anwesenheit heute</h2>
+    <div id="groupContent">Lade Daten...</div>
+  </div>
+
+  <div id="searchOverlay" class="overlay">
+    <span class="close-btn" onclick="closeOverlay('searchOverlay')">&times;</span>
+    <h2>Mitglied suchen</h2>
+    <input type="text" id="sVorname" placeholder="Vorname" style="width:90%">
+    <input type="text" id="sNachname" placeholder="Nachname" style="width:90%">
+    <button class="main" onclick="runSearch()" style="width:100%; margin-top:10px;">Suchen</button>
+    <div id="searchResults" style="margin-top:20px;"></div>
+  </div>
+
   <script src="https://unpkg.com/html5-qrcode"></script>
   <script>
-    // --- KONFIGURATION ---
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyit1Y7j8xC0tEb6NyaiAzPIKkiytH_CHnyDBuqaA9p1XPwpD_FmkuJ83TXPgSe2UdbnA/exec"; 
-    // ^ Ersetze dies durch deinen Google-Link von Schritt 1!
+    // --- BITTE DEINE URL HIER EINTRAGEN ---
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz0Vth67a0n_YrrqPE_YxoPjjpqwoUqU1IdFXuoRJY18-V2Z0GTD3-3CvpvO_9D8xtriQ/exec";
 
     let isLocked = false;
     const html5QrCode = new Html5Qrcode("reader");
+    html5QrCode.start({ facingMode: "environment" }, { fps: 20, qrbox: 250 }, onScanSuccess);
 
-    // Scanner starten (Optimiert für iOS & Android)
-    const config = { fps: 20, qrbox: 250, videoConstraints: { facingMode: "environment" } };
-    
-    html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess)
-      .catch(err => {
-        alert("Kamera-Fehler: Bitte erlaube den Zugriff in den Browser-Einstellungen.");
-      });
+    function onScanSuccess(id) { processId(id); }
+    function checkManual() { processId(document.getElementById('manualId').value); }
 
     function processId(id) {
       if (!id || isLocked) return;
       isLocked = true;
-      
-      const resText = document.getElementById('result-text');
       document.body.className = "loading-state";
-      resText.innerText = "Prüfe...";
+      document.getElementById('result-text').innerText = "Prüfe...";
 
-      // Ruf an Google Script
       fetch(`${SCRIPT_URL}?id=${id}`)
-        .then(response => response.json())
+        .then(r => r.json())
         .then(res => {
           if (res.found) {
             document.body.className = (res.type === "trainer") ? "blue" : (res.type === "hint" ? "yellow" : "success");
-            resText.innerText = "✅ " + res.name;
+            document.getElementById('result-text').innerText = "✅ " + res.name;
           } else {
             document.body.className = "error";
-            resText.innerText = "❌ Unbekannt: " + id;
+            document.getElementById('result-text').innerText = "❌ Unbekannt";
           }
-          
-          setTimeout(() => {
-            document.body.className = "idle";
-            resText.innerText = "Bereit";
-            isLocked = false;
-          }, 3000);
-        })
-        .catch(err => {
-          alert("Fehler bei der Verbindung zum Google Script!");
-          isLocked = false;
+          setTimeout(() => { document.body.className = "idle"; document.getElementById('result-text').innerText = "Bereit"; isLocked = false; }, 3000);
+        }).catch(() => { alert("Verbindung fehlgeschlagen"); isLocked = false; });
+    }
+
+    function showTodayAttendance() {
+      document.getElementById('groupOverlay').style.display = "block";
+      document.getElementById('groupContent').innerText = "Lade...";
+      fetch(`${SCRIPT_URL}?action=getTodayAttendance`)
+        .then(r => r.json())
+        .then(data => {
+          let html = `<b>Gesamt: ${data.total}</b><br><br>`;
+          for (let g in data.groups) {
+            html += `<b>${g}</b><br>${data.groups[g].join(', ')}<br><br>`;
+          }
+          document.getElementById('groupContent').innerHTML = html;
         });
     }
 
-    function onScanSuccess(decodedText) { processId(decodedText); }
-    function checkManual() { processId(document.getElementById('manualId').value); }
+    function openSearch() { document.getElementById('searchOverlay').style.display = "block"; }
+    function runSearch() {
+      const vn = document.getElementById('sVorname').value;
+      const nn = document.getElementById('sNachname').value;
+      document.getElementById('searchResults').innerText = "Suche...";
+      fetch(`${SCRIPT_URL}?action=search&vn=${vn}&nn=${nn}&dob=`)
+        .then(r => r.json())
+        .then(results => {
+          let html = results.map(r => `
+            <div class="search-result-item">
+              <span>${r.name}</span>
+              <button class="main" onclick="manualCheckIn('${r.id}')">Check-In</button>
+            </div>`).join('');
+          document.getElementById('searchResults').innerHTML = html || "Nichts gefunden.";
+        });
+    }
+    function manualCheckIn(id) { closeOverlay('searchOverlay'); processId(id); }
+    function closeOverlay(id) { document.getElementById(id).style.display = "none"; }
   </script>
 </body>
 </html>
