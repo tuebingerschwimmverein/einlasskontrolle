@@ -232,6 +232,9 @@
     function toggleHistory() { const c = document.getElementById('history-content'); c.style.display = (c.style.display === "block") ? "none" : "block"; }
     function updateHistory(res) { scanHistory.unshift(res); if (scanHistory.length > 10) scanHistory.pop(); document.getElementById('history-list').innerHTML = scanHistory.map(item => `<div class="history-item"><b>#${item.id}</b> ${item.name}</div>`).join(''); }
     function checkManual() { processId(document.getElementById('manualId').value); }
+    window.addEventListener('load', () => {
+  fetch(`${SCRIPT_URL}?action=ping`).catch(() => {});
+});
   </script>
 </body>
 </html>
