@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+  <title>TSV Scanner</title>
+  <style>
+    /* DEIN ORIGINAL STYLE */
+    body { font-family: 'Segoe UI', sans-serif; text-align: center; margin: 0; transition: background 0.3s; min-height: 100vh; background: #f4f4f4; }
+    #header { padding: 15px; background: #515a6d; color: white; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
+    #reader { width: 100%; max-width: 400px; margin: 10px auto; border-radius: 12px; overflow: hidden; border: 4px solid #ccc; background: #000; min-height: 300px; }
+    #result-text { font-size: 2.2em; font-weight: bold; padding: 20px; }
+    .success { background: #28a745 !important; color: white; }
+    .blue { background: #007bff !important; color: white; }
+    .yellow { background: #ffc107 !important; color: #333; }
+    .error { background: #dc3545 !important; color: white; }
+    .idle { background: #f4f4f4; color: #333; }
+    .loading-state { background: #d1d8e2; color: #666; }
+    .manual-area { margin: 15px; }
+    input { padding: 12px; border-radius: 8px; border: 2px solid #ccc; width: 100px; }
+    button.main { padding: 12px 20px; background: #515a6d; color: white; border: none; border-radius: 8px; font-weight: bold; }
+  </style>
+</head>
+<body class="idle">
+  <div id="header"><span>TSV EINLASSKONTROLLE</span></div>
+  
+  <div id="reader"></div>
+  
+  <div class="manual-area">
+    <input type="text" id="manualId" placeholder="ID..." inputmode="numeric">
+    <button class="main" onclick="checkManual()">Check</button>
+  </div>
+
+  <div id="result-text">Bereit</div>
+
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <script>
+    // --- KONFIGURATION ---
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyit1Y7j8xC0tEb6NyaiAzPIKkiytH_CHnyDBuqaA9p1XPwpD_FmkuJ83TXPgSe2UdbnA/exec"; 
+    // ^ Ersetze dies durch deinen Google-Link von Schritt 1!
+
+    let isLocked = false;
+    const html5QrCode = new Html5Qrcode("reader");
+
+    // Scanner starten (Optimiert für iOS & Android)
+    const config = { fps: 20, qrbox: 250, videoConstraints: { facingMode: "environment" } };
+    
+    html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess)
+      .catch(err => {
+        alert("Kamera-Fehler: Bitte erlaube den Zugriff in den Browser-Einstellungen.");
+      });
+
+    function processId(id) {
+      if (!id || isLocked) return;
+      isLocked = true;
+      
+      const resText = document.getElementById('result-text');
+      document.body.className = "loading-state";
+      resText.innerText = "Prüfe...";
+
+      // Ruf an Google Script
+      fetch(`${SCRIPT_URL}?id=${id}`)
+        .then(response => response.json())
+        .then(res => {
+          if (res.found) {
+            document.body.className = (res.type === "trainer") ? "blue" : (res.type === "hint" ? "yellow" : "success");
+            resText.innerText = "✅ " + res.name;
+          } else {
+            document.body.className = "error";
+            resText.innerText = "❌ Unbekannt: " + id;
+          }
+          
+          setTimeout(() => {
+            document.body.className = "idle";
+            resText.innerText = "Bereit";
+            isLocked = false;
+          }, 3000);
+        })
+        .catch(err => {
+          alert("Fehler bei der Verbindung zum Google Script!");
+          isLocked = false;
+        });
+    }
+
+    function onScanSuccess(decodedText) { processId(decodedText); }
+    function checkManual() { processId(document.getElementById('manualId').value); }
+  </script>
+</body>
+</html>
