@@ -259,7 +259,16 @@
         });
     }
 
-    function manualCheckIn(id) { closeOverlay('searchOverlay'); processId(id); }
+    function manualCheckIn(id) { 
+      // Leert die Suchfelder für das nächste Mal
+      document.getElementById('sVorname').value = "";
+      document.getElementById('sNachname').value = "";
+      document.getElementById('sGeburtstag').value = "";
+      document.getElementById('searchResults').innerHTML = "";
+
+      closeOverlay('searchOverlay'); 
+      processId(id); 
+      }
     function closeOverlay(id) { document.getElementById(id).style.display = "none"; }
     function toggleHistory() { const c = document.getElementById('history-content'); c.style.display = (c.style.display === "block") ? "none" : "block"; }
     function updateHistory(res) { scanHistory.unshift(res); if (scanHistory.length > 10) scanHistory.pop(); document.getElementById('history-list').innerHTML = scanHistory.map(item => `<div class="history-item"><b>#${item.id}</b> ${item.name}</div>`).join(''); }
