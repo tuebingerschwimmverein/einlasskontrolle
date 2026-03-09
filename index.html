@@ -96,7 +96,11 @@
         <div class="info-row"><span class="info-label">Alter</span><span id="detAge" class="info-val bold">-</span></div>
         <div class="info-row"><span class="info-label">Spond-Gruppen</span><div id="detGroups" class="info-val-small" style="line-height: 1.6; padding-top: 5px;">Lade...</div></div>
       </div>
-      <div class="history-box"><h3>Letzte 5 Check-ins</h3><div id="detHistory" style="line-height: 1.8; color: #444; font-size: 0.95em;"></div></div>
+      <div class="history-box">
+        <h3>Letzte Check-ins</h3>
+        <div id="detHistory" style="line-height: 1.8; color: #444; font-size: 0.95em;"></div>
+        <button id="loadArchiveBtn" onclick="loadArchiveHistory()" style="margin-top:10px; width:100%; padding:8px; background:#e0e0e0; border:1px solid #ccc; border-radius:8px; cursor:pointer; font-size:0.85em; color:#666;">+ Aus Archiv laden (letzte 6 Wochen)</button>
+      </div>
     </div>
   </div>
 
@@ -183,6 +187,9 @@
       document.getElementById('detName').innerText = currentMember.name;
       document.getElementById('detailOverlay').style.display = "block";
       document.getElementById('detGroups').innerText = "Lade...";
+      document.getElementById('loadArchiveBtn').style.display = "block";
+      document.getElementById('loadArchiveBtn').innerText = "+ Aus Archiv laden (letzte 6 Wochen)";
+      document.getElementById('loadArchiveBtn').disabled = false;
       
       fetch(`${SCRIPT_URL}?action=details&id=${currentMember.id}&vn=${currentMember.firstName}&nn=${currentMember.lastName}`)
         .then(r => r.json())
@@ -190,7 +197,32 @@
           document.getElementById('detDob').innerText = details.dob;
           document.getElementById('detAge').innerText = details.age + " Jahre";
           document.getElementById('detGroups').innerHTML = details.groups.length ? details.groups.join('<div style="height:8px;"></div>') : "Keine Gruppen";
-          document.getElementById('detHistory').innerHTML = details.history.length ? details.history.map(h => "• " + h + " Uhr").join('<br>') : "Keine Einträge";
+          document.getElementById('detHistory').innerHTML = details.history.length ? details.history.map(h => "• " + h + " Uhr").join('<br>') : "Noch kein Check-in heute.";
+        });
+    }
+
+    function loadArchiveHistory() {
+      const btn = document.getElementById('loadArchiveBtn');
+      btn.innerText = "Lade aus Archiv...";
+      btn.disabled = true;
+
+      fetch(`${SCRIPT_URL}?action=loadLogHistory&id=${currentMember.id}`)
+        .then(r => r.json())
+        .then(logHistory => {
+          if (logHistory.length === 0) {
+            btn.innerText = "Keine weiteren Einträge im Archiv";
+          } else {
+            const historyDiv = document.getElementById('detHistory');
+            let currentContent = historyDiv.innerHTML;
+            if (currentContent.includes("Noch kein Check-in heute.")) currentContent = "";
+            let archiveHtml = logHistory.map(h => "• " + h + " Uhr (Archiv)").join('<br>');
+            historyDiv.innerHTML = currentContent + (currentContent ? "<br>" : "") + archiveHtml;
+            btn.style.display = "none";
+          }
+        })
+        .catch(() => {
+          btn.innerText = "Fehler beim Laden";
+          btn.disabled = false;
         });
     }
 
@@ -232,9 +264,7 @@
     function toggleHistory() { const c = document.getElementById('history-content'); c.style.display = (c.style.display === "block") ? "none" : "block"; }
     function updateHistory(res) { scanHistory.unshift(res); if (scanHistory.length > 10) scanHistory.pop(); document.getElementById('history-list').innerHTML = scanHistory.map(item => `<div class="history-item"><b>#${item.id}</b> ${item.name}</div>`).join(''); }
     function checkManual() { processId(document.getElementById('manualId').value); }
-    window.addEventListener('load', () => {
-  fetch(`${SCRIPT_URL}?action=ping`).catch(() => {});
-});
+    window.addEventListener('load', () => { fetch(`${SCRIPT_URL}?action=ping`).catch(() => {}); });
   </script>
 </body>
 </html>
