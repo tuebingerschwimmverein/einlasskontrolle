@@ -184,20 +184,35 @@
 
     function openDetails() {
       if (!currentMember) return;
-      document.getElementById('detName').innerText = currentMember.name;
-      document.getElementById('detailOverlay').style.display = "block";
+      
+      // 1. Felder sofort zurücksetzen (Leeren), damit keine alten Daten flackern
+      document.getElementById('detName').innerText = "Lade...";
+      document.getElementById('detDob').innerText = "...";
+      document.getElementById('detAge').innerText = "...";
       document.getElementById('detGroups').innerText = "Lade...";
+      document.getElementById('detHistory').innerText = "Lade...";
+      
+      // Button-Zustand für Archiv zurücksetzen
       document.getElementById('loadArchiveBtn').style.display = "block";
       document.getElementById('loadArchiveBtn').innerText = "+ Aus Archiv laden (letzte 6 Wochen)";
       document.getElementById('loadArchiveBtn').disabled = false;
       
+      // Overlay anzeigen
+      document.getElementById('detailOverlay').style.display = "block";
+      
+      // 2. Daten vom Server abrufen
       fetch(`${SCRIPT_URL}?action=details&id=${currentMember.id}&vn=${currentMember.firstName}&nn=${currentMember.lastName}`)
         .then(r => r.json())
         .then(details => {
+          // Felder mit echten Daten füllen
+          document.getElementById('detName').innerText = currentMember.name;
           document.getElementById('detDob').innerText = details.dob;
           document.getElementById('detAge').innerText = details.age + " Jahre";
           document.getElementById('detGroups').innerHTML = details.groups.length ? details.groups.join('<div style="height:8px;"></div>') : "Keine Gruppen";
           document.getElementById('detHistory').innerHTML = details.history.length ? details.history.map(h => "• " + h + " Uhr").join('<br>') : "Noch kein Check-in heute.";
+        })
+        .catch(() => {
+          document.getElementById('detName').innerText = "Fehler beim Laden";
         });
     }
 
