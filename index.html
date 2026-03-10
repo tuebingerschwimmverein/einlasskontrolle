@@ -3,230 +3,158 @@
 <head> 
   <meta charset="UTF-8"> 
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0"> 
-  <title>TSV Einlasskontrolle</title> 
+  <title>TSV Einlass</title> 
   <style> 
-    body { font-family: 'Segoe UI', sans-serif; text-align: center; margin: 0; transition: background 0.3s; min-height: 100vh; } 
-    #status-area { transition: background 0.3s; padding-bottom: 20px; }
-    #header { padding: 15px; background: #515a6d; color: white; font-weight: bold; font-size: 1.1em; display: flex; justify-content: space-between; align-items: center; } 
+    body { font-family: 'Segoe UI', sans-serif; text-align: center; margin: 0; background: #f4f4f4; } 
+    #status-area { transition: background 0.3s; padding-bottom: 20px; border-bottom: 2px solid #ddd; }
+    #header { padding: 15px; background: #515a6d; color: white; font-weight: bold; display: flex; justify-content: space-between; align-items: center; } 
     #reader { width: 100%; max-width: 400px; margin: 10px auto; border-radius: 12px; overflow: hidden; border: 4px solid #ccc; background: #000; } 
-    #loader-container { width: 100%; height: 8px; background: #ddd; display: none; } 
-    #loader-bar { width: 0%; height: 100%; background: #007bff; transition: width 0.2s; } 
-    
-    #result-container { padding: 20px; min-height: 100px; } 
-    #result-text { font-size: 2.2em; font-weight: bold; line-height: 1.1; } 
-    #hint-box { background: rgba(255,255,255,0.25); padding: 15px; border-radius: 12px; font-size: 1.4em; font-weight: bold; display: none; margin: 10px auto; max-width: 600px; border: 3px solid white; animation: blinker 1.5s linear infinite; } 
+    #result-text { font-size: 2.2em; font-weight: bold; padding: 10px; } 
 
-    /* Unterer Bereich: Aktuelles Mitglied */
-    #current-member-section { display: none; background: #f8f9fa; padding: 25px; border-top: 5px solid #515a6d; }
-    .current-name-display { font-size: 1.8em; font-weight: bold; color: #333; margin-bottom: 15px; display: block; }
-    .action-btn { width: 100%; max-width: 320px; padding: 14px; background: #515a6d; color: white; border: none; border-radius: 25px; cursor: pointer; font-weight: bold; margin-bottom: 10px; font-size: 1.05em; }
-    .admin-btn { background: #888; }
+    /* Unterer Verwaltungsbereich */
+    #admin-section { display: none; background: #fff; padding: 25px; text-align: center; }
+    .current-name { font-size: 1.8em; font-weight: bold; margin-bottom: 15px; display: block; color: #515a6d; }
+    .action-btn { width: 90%; max-width: 320px; padding: 15px; background: #515a6d; color: white; border: none; border-radius: 25px; cursor: pointer; font-weight: bold; margin-bottom: 10px; }
     
-    /* Original-Styles V3 */
-    .forgot-btn { display: block; margin: 15px auto; padding: 10px 20px; background: #ffcc00; color: #333; border: 1px solid #ccaa00; border-radius: 20px; cursor: pointer; font-weight: bold; width: 70%; max-width: 250px; } 
-    .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #ffffff; color: #333; z-index: 1000; overflow-y: auto; padding: 20px; box-sizing: border-box; } 
-    .overlay-content { max-width: 500px; margin: 0 auto; text-align: left; } 
-    .close-btn { float: right; font-size: 2.5em; cursor: pointer; padding: 0 10px; color: #515a6d; } 
-    .info-box { background: #d1d8e2; padding: 20px; border-radius: 12px; margin-bottom: 20px; } 
-    .history-box { background: #f8f9fa; border: 1px solid #ddd; padding: 15px; border-radius: 12px; } 
-    #history-wrapper { margin-top: 0px; text-align: left; background: #fff; border-top: 1px solid #ccc; } 
-    #history-toggle { width: 100%; padding: 12px; background: #f8f9fa; border: none; border-bottom: 1px solid #eee; font-weight: bold; cursor: pointer; color: #666; display: flex; justify-content: space-between; align-items: center; } 
-    #history-content { display: none; max-height: 250px; overflow-y: auto; } 
-    .history-item { font-size: 0.9em; padding: 10px; border-bottom: 1px solid #eee; } 
-
-    .idle { background: #f4f4f4; color: #333; } 
-    .success { background: #28a745; color: white; } 
-    .blue { background: #007bff; color: white; } 
-    .yellow { background: #ffc107; color: #333; } 
-    .error { background: #dc3545; color: white; } 
+    .forgot-btn { width: 80%; padding: 12px; background: #ffcc00; border: none; border-radius: 20px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+    .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #fff; z-index: 1000; overflow-y: auto; padding: 20px; box-sizing: border-box; text-align: left; }
+    .close-btn { float: right; font-size: 2.5em; cursor: pointer; }
     
-    input { padding: 12px; border-radius: 8px; border: 2px solid #ccc; font-size: 1.1em; margin: 5px; } 
-    button.main { padding: 12px 20px; background: #515a6d; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; } 
-    @keyframes blinker { 50% { opacity: 0.5; } } 
-    .loader { border: 4px solid #f3f3f3; border-top: 4px solid #515a6d; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; display: inline-block; vertical-align: middle; margin-right: 10px; }
+    .success { background: #28a745 !important; color: white; } 
+    .error { background: #dc3545 !important; color: white; } 
+    .idle { background: #f4f4f4; }
+    
+    .loader { border: 4px solid #f3f3f3; border-top: 4px solid #515a6d; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; display: inline-block; }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    input, select, textarea { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; }
   </style> 
 </head> 
 <body class="idle"> 
+
   <div id="status-area">
     <div id="header"> 
-      <span>TSV EINLASSKONTROLLE</span> 
-      <button style="padding: 8px 12px; background: #d1d8e2; color: #515a6d; border: none; border-radius: 6px; cursor: pointer; font-size: 0.8em; font-weight: bold;" onclick="showTodayAttendance()">👥 Gruppen</button> 
+      <span>TSV EINLASS</span> 
+      <button onclick="showTodayAttendance()" style="padding:8px; border-radius:5px; border:none; font-weight:bold;">👥 Gruppen</button> 
     </div> 
-    <div id="loader-container"><div id="loader-bar"></div></div> 
     <div id="reader"></div> 
-    
-    <div style="margin: 15px;"> 
-      <input type="text" id="manualId" placeholder="ID..." inputmode="numeric" style="width:100px;"> 
-      <button class="main" onclick="checkManual()">Check</button> 
-    </div> 
-
-    <div id="result-container"> 
-      <div id="result-text">Bereit</div> 
-      <div id="hint-box"></div> 
-    </div> 
-    <button class="forgot-btn" onclick="openSearch()">🔎 AUSWEIS VERGESSEN / SUCHE</button> 
+    <div id="result-text">Bereit</div> 
+    <input type="text" id="manualId" placeholder="ID eingeben..." style="width:120px;">
+    <button onclick="checkManual()" style="padding:12px; background:#515a6d; color:white; border-radius:8px; border:none;">OK</button><br>
+    <button class="forgot-btn" onclick="document.getElementById('searchOverlay').style.display='block'">🔎 AUSWEIS VERGESSEN</button> 
   </div>
 
-  <div id="current-member-section">
-    <span style="font-size: 0.8em; color: #666; text-transform: uppercase;">Zuletzt erkannt:</span>
-    <span id="currentNameDisplay" class="current-name-display">-</span>
+  <div id="admin-section">
+    <span class="current-name" id="curName">-</span>
     <button class="action-btn" onclick="openDetails()">Mitgliedsdaten anzeigen</button><br>
-    <button class="action-btn admin-btn" onclick="openAdminOrder()">Verwaltungsauftrag erstellen</button>
+    <button class="action-btn" style="background:#888;" onclick="openOrder()">Verwaltungsauftrag erstellen</button>
   </div>
 
-  <div id="history-wrapper"> 
-    <button id="history-toggle" onclick="toggleHistory()"> 
-      <span>🕒 Letzte 10 Scans</span> <span>▼</span> 
-    </button> 
-    <div id="history-content"><div id="history-list"></div></div> 
-  </div> 
+  <div id="searchOverlay" class="overlay">
+    <span class="close-btn" onclick="this.parentElement.style.display='none'">&times;</span>
+    <h2>Mitglied suchen</h2>
+    <input type="text" id="sVN" placeholder="Vorname">
+    <input type="text" id="sNN" placeholder="Nachname">
+    <button class="action-btn" onclick="runSearch()">Suchen</button>
+    <div id="searchResults"></div>
+  </div>
 
-  <div id="detailOverlay" class="overlay"><div class="overlay-content">
-      <span class="close-btn" onclick="closeOverlay('detailOverlay')">&times;</span> 
-      <h2 id="detName">Name</h2> 
-      <div class="info-box"> 
-        <div><b>Geburtstag:</b> <span id="detDob">-</span></div> 
-        <div><b>Alter:</b> <span id="detAge">-</span></div> 
-        <div style="margin-top:10px;"><b>Gruppen:</b><br><div id="detGroups">Lade...</div></div> 
-      </div> 
-      <div class="history-box"><h3>Letzte Check-ins</h3><div id="detHistory"></div></div>
-  </div></div>
+  <div id="orderOverlay" class="overlay">
+    <span class="close-btn" onclick="this.parentElement.style.display='none'">&times;</span>
+    <h2>Verwaltungsauftrag</h2>
+    <select id="orderType" onchange="renderOrderForm()">
+      <option value="">-- Auftrag wählen --</option>
+      <option value="Neuausstellung">1. Neuausstellung Ausweis</option>
+      <option value="Datenänderung">2. Datenänderung</option>
+      <option value="Dokumente">3. Ausstellung von Dokumenten</option>
+      <option value="Vorfall">4. Vorfall melden</option>
+      <option value="Sonstiges">5. Sonstiges Anliegen</option>
+    </select>
+    <div id="orderForm"></div>
+    <button id="sendBtn" class="action-btn" style="background:#28a745; display:none;" onclick="sendOrder()">Auftrag senden</button>
+  </div>
 
-  <div id="adminOverlay" class="overlay"><div class="overlay-content">
-      <span class="close-btn" onclick="closeOverlay('adminOverlay')">&times;</span>
-      <h2>Verwaltungsauftrag</h2>
-      <p id="adminMemberInfo" style="font-weight:bold;"></p>
-      <select id="orderType" style="width:100%; padding:12px; margin-bottom:15px;" onchange="updateAdminFields()">
-        <option value="">-- Typ wählen --</option>
-        <option value="Neuausstellung Ausweis">Neuausstellung Ausweis</option>
-        <option value="Seepferdchen">Seepferdchen Dokument</option>
-        <option value="TRIXI">TRIXI Dokument</option>
-        <option value="Bronze">Bronze Dokument</option>
-        <option value="Silber">Silber Dokument</option>
-        <option value="Gold">Gold Dokument</option>
-        <option value="Datenänderung">Datenänderung</option>
-        <option value="Sonstiges">Sonstiges</option>
-      </select>
-      <textarea id="adminNote" style="width:100%; height:100px;" placeholder="Bemerkung..."></textarea>
-      <button class="main" id="sendOrderBtn" onclick="sendOrder()" style="width:100%; margin-top:15px; background:#28a745;">Senden</button>
-  </div></div>
-
-  <div id="groupOverlay" class="overlay"><div class="overlay-content">
-      <span class="close-btn" onclick="closeOverlay('groupOverlay')">&times;</span> 
-      <h2 id="groupTitle">Gruppen heute</h2> 
-      <div id="totalCount" style="font-weight:bold; margin-bottom:15px;"></div> 
-      <div id="groupContent"></div> 
-  </div></div>
-
-  <div id="searchOverlay" class="overlay"><div class="overlay-content">
-      <span class="close-btn" onclick="closeOverlay('searchOverlay')">&times;</span> 
-      <h2>Mitglied suchen</h2> 
-      <input type="text" id="sVorname" placeholder="Vorname"> 
-      <input type="text" id="sNachname" placeholder="Nachname"> 
-      <input type="text" id="sGeburtstag" placeholder="Geburtstag (TT.MM.JJJJ)"> 
-      <button class="main" onclick="runSearch()">Suchen</button> 
-      <div id="searchResults" style="margin-top:20px;"></div> 
-  </div></div>
+  <div id="groupOverlay" class="overlay">
+    <span class="close-btn" onclick="this.parentElement.style.display='none'">&times;</span>
+    <h2 id="gTitle">Anwesenheit</h2>
+    <div id="gContent"></div>
+  </div>
 
   <script src="https://unpkg.com/html5-qrcode"></script> 
   <script> 
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyIZ_jMTEP5uaZDbQ2n0FMoJxaHypMfxtXr8TPTd6LcOPJU2po58ZWQYwa_LKTlQ1d1gA/exec"; 
-    let currentMember = null, scanHistory = [], isLocked = false; 
-
+    const SCRIPT_URL = "DEINE_URL"; 
+    let currentMember = null;
     const html5QrCode = new Html5Qrcode("reader"); 
-    html5QrCode.start({ facingMode: "environment" }, { fps: 20, qrbox: 250 }, (t) => processId(t)); 
-
-    function handleResponse(res) { 
-      const area = document.getElementById('status-area'); 
-      const text = document.getElementById('result-text'); 
-      document.getElementById('loader-container').style.display = "none"; 
-      
-      if (res.found) { 
-        currentMember = res; 
-        updateHistory(res); 
-        document.getElementById('current-member-section').style.display = "block";
-        document.getElementById('currentNameDisplay').innerText = res.name;
-        
-        if (res.type === "hint") { 
-          area.className = "yellow"; 
-          document.getElementById('hint-box').innerText = "⚠️ " + res.hint; 
-          document.getElementById('hint-box').style.display = "block"; 
-        } else { 
-          area.className = (res.type.includes("Trainer")) ? "blue" : "success"; 
-          document.getElementById('hint-box').style.display = "none"; 
-        } 
-        text.innerHTML = "✅ " + res.name; 
-      } else { 
-        area.className = "error"; 
-        text.innerHTML = "❌ ungültig: " + res.id; 
-      } 
-      setTimeout(() => { if (text.innerText !== "Lädt...") { area.className = "idle"; text.innerText = "Bereit"; document.getElementById('hint-box').style.display = "none"; } }, 4000); 
-    } 
+    html5QrCode.start({ facingMode: "environment" }, { fps: 15, qrbox: 250 }, (t) => processId(t)); 
 
     function processId(id) { 
-      if (!id || isLocked) return; 
-      isLocked = true; setTimeout(() => isLocked = false, 1500); 
-      document.getElementById('status-area').className = "idle"; 
-      document.getElementById('result-text').innerText = "Lädt..."; 
-      document.getElementById('loader-container').style.display = "block"; 
-      fetch(`${SCRIPT_URL}?id=${id}`).then(r => r.json()).then(handleResponse).catch(() => alert("Fehler!")); 
-    } 
+      if (!id) return;
+      document.getElementById('result-text').innerText = "Prüfe..."; 
+      fetch(`${SCRIPT_URL}?id=${id}`).then(r => r.json()).then(res => {
+        const area = document.getElementById('status-area');
+        if (res.found) {
+          currentMember = res;
+          area.className = "success";
+          document.getElementById('result-text').innerText = "✅ " + res.name;
+          document.getElementById('admin-section').style.display = "block";
+          document.getElementById('curName').innerText = res.name;
+        } else {
+          area.className = "error";
+          document.getElementById('result-text').innerText = "❌ Unbekannt";
+        }
+        setTimeout(() => { area.className = "idle"; document.getElementById('result-text').innerText = "Bereit"; }, 3000);
+      });
+    }
 
-    function openDetails() { 
-      if (!currentMember) return; 
-      document.getElementById('detailOverlay').style.display = "block"; 
-      document.getElementById('detName').innerText = "Lade..."; 
-      fetch(`${SCRIPT_URL}?action=details&id=${currentMember.id}&vn=${currentMember.firstName}&nn=${currentMember.lastName}`) 
-        .then(r => r.json()).then(d => { 
-          document.getElementById('detName').innerText = currentMember.name; 
-          document.getElementById('detDob').innerText = d.dob; 
-          document.getElementById('detAge').innerText = d.age + " Jahre"; 
-          document.getElementById('detGroups').innerHTML = d.groups.join('<br>') || "Keine"; 
-          document.getElementById('detHistory').innerHTML = d.history.join('<br>') || "Keine Check-ins heute"; 
-        }); 
-    } 
+    function runSearch() {
+      const vn = document.getElementById('sVN').value, nn = document.getElementById('sNN').value;
+      document.getElementById('searchResults').innerHTML = "Suche...";
+      fetch(`${SCRIPT_URL}?action=search&vn=${vn}&nn=${nn}`).then(r => r.json()).then(res => {
+        document.getElementById('searchResults').innerHTML = res.map(m => 
+          `<div style="padding:10px; border-bottom:1px solid #eee;">${m.name} <button onclick="manualIn('${m.id}')">Check-In</button></div>`).join('');
+      });
+    }
 
-    function openAdminOrder() {
-      if (!currentMember) return;
-      document.getElementById('adminMemberInfo').innerText = "Auftrag für: " + currentMember.name;
-      document.getElementById('adminOverlay').style.display = "block";
+    function manualIn(id) { document.getElementById('searchOverlay').style.display='none'; processId(id); }
+    function checkManual() { processId(document.getElementById('manualId').value); }
+
+    function openOrder() { document.getElementById('orderOverlay').style.display='block'; }
+
+    function renderOrderForm() {
+      const type = document.getElementById('orderType').value;
+      const form = document.getElementById('orderForm');
+      document.getElementById('sendBtn').style.display = "block";
+      let html = "";
+      if (type === "Neuausstellung") {
+        html = `<select id="f1"><option>Kostenpflichtig (5,00€)</option><option>Gebührenfrei (Kulanz)</option></select><textarea id="f2" placeholder="Bemerkung"></textarea>`;
+      } else if (type === "Datenänderung") {
+        html = `<input id="f1" placeholder="Neuer Name"><input id="f2" placeholder="Straße/Hausnr."><input id="f3" placeholder="PLZ/Ort"><input id="f4" placeholder="Tel/Email"><textarea id="f5" placeholder="Bemerkung"></textarea>`;
+      } else if (type === "Dokumente") {
+        html = `<select id="f1"><option>Bestätigung Mitgliedschaft</option><option>Antrag Bildung & Teilhabe</option><option>Sonstiger Antrag (siehe Bemerkung)</option></select><textarea id="f2" placeholder="Bemerkung"></textarea>`;
+      } else if (type === "Vorfall") {
+        html = `<input id="f1" placeholder="Betreff"><input id="f2" placeholder="Zeitpunkt"><input id="f3" placeholder="Ort"><textarea id="f4" placeholder="Beteiligte Personen / Beschreibung"></textarea>`;
+      } else if (type === "Sonstiges") {
+        html = `<select id="f1"><option>Mitgliedschaft</option><option>Kündigung</option><option>Beiträge</option><option>Aktivenumlage</option><option>Sonstiges</option></select><input id="f2" placeholder="Betreff"><textarea id="f3" placeholder="Freitext"></textarea>`;
+      }
+      form.innerHTML = html;
     }
 
     function sendOrder() {
       const type = document.getElementById('orderType').value;
-      if (!type) return alert("Bitte Typ wählen!");
-      const btn = document.getElementById('sendOrderBtn');
-      btn.disabled = true; btn.innerHTML = '<div class="loader"></div> Sende...';
-      const payload = { memberId: currentMember.id, memberName: currentMember.name, type: type, details: document.getElementById('adminNote').value };
-      fetch(SCRIPT_URL + "?action=adminOrder", { method: 'POST', body: JSON.stringify(payload) })
-        .then(() => { alert("Gesendet!"); closeOverlay('adminOverlay'); btn.disabled = false; btn.innerText = "Senden"; });
+      const inputs = document.getElementById('orderForm').querySelectorAll('input, select, textarea');
+      let details = "";
+      inputs.forEach(i => details += i.placeholder + ": " + i.value + "\n");
+      fetch(SCRIPT_URL + "?action=adminOrder", { method: 'POST', body: JSON.stringify({memberId: currentMember.id, memberName: currentMember.name, type: type, details: details}) })
+      .then(() => { alert("Auftrag gesendet!"); document.getElementById('orderOverlay').style.display='none'; });
     }
 
-    function showTodayAttendance() { 
-      document.getElementById('groupOverlay').style.display = "block"; 
-      document.getElementById('groupContent').innerHTML = '<div class="loader"></div> Lade Daten...'; 
-      fetch(`${SCRIPT_URL}?action=getTodayAttendance`).then(r => r.json()).then(data => { 
-        document.getElementById('totalCount').innerText = "Gesamt: " + data.total; 
-        let h = ""; for (let g in data.groups) h += `<div style="margin-bottom:15px;"><b>${g} (${data.groups[g].length})</b><br><small>${data.groups[g].join(', ')}</small></div>`; 
-        document.getElementById('groupContent').innerHTML = h || "Keine Daten."; 
-      }); 
-    } 
-
-    function runSearch() { 
-      const vn = document.getElementById('sVorname').value, nn = document.getElementById('sNachname').value, dob = document.getElementById('sGeburtstag').value; 
-      document.getElementById('searchResults').innerHTML = '<div class="loader"></div> Suche...'; 
-      fetch(`${SCRIPT_URL}?action=search&vn=${vn}&nn=${nn}&dob=${dob}`).then(r => r.json()).then(results => { 
-        if (!results.length) { document.getElementById('searchResults').innerHTML = "Nichts gefunden."; return; } 
-        document.getElementById('searchResults').innerHTML = results.map(r => `<div style="padding:10px; border-bottom:1px solid #ddd;"><b>${r.name}</b><br><button class="main" style="padding:4px 8px; font-size:0.8em;" onclick="manualCheckIn('${r.id}')">Einchecken</button></div>`).join(''); 
-      }); 
-    } 
-
-    function manualCheckIn(id) { closeOverlay('searchOverlay'); processId(id); } 
-    function updateHistory(res) { scanHistory.unshift(res); if (scanHistory.length > 10) scanHistory.pop(); document.getElementById('history-list').innerHTML = scanHistory.map(item => `<div class="history-item"><b>#${item.id}</b> ${item.name}</div>`).join(''); } 
-    function toggleHistory() { const c = document.getElementById('history-content'); c.style.display = (c.style.display === "block") ? "none" : "block"; } 
-    function checkManual() { processId(document.getElementById('manualId').value); } 
-    function closeOverlay(id) { document.getElementById(id).style.display = "none"; } 
+    function showTodayAttendance() {
+      document.getElementById('groupOverlay').style.display='block';
+      document.getElementById('gContent').innerHTML = "Lade...";
+      fetch(`${SCRIPT_URL}?action=getTodayAttendance`).then(r => r.json()).then(res => {
+        document.getElementById('gTitle').innerText = "Anwesend (" + res.total + ")";
+        document.getElementById('gContent').innerHTML = res.groups["Anwesend"] ? res.groups["Anwesend"].map(n => `<div>${n}</div>`).sort().join('') : "Keine heute.";
+      });
+    }
   </script> 
 </body> 
 </html>
