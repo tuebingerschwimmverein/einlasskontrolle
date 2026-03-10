@@ -16,30 +16,19 @@
     #hint-box { background: rgba(255,255,255,0.25); padding: 15px; border-radius: 12px; font-size: 1.4em; font-weight: bold; display: none; margin: 10px auto; max-width: 600px; border: 3px solid white; animation: blinker 1.5s linear infinite; }
     
     .detail-btn { display: none; margin: 10px auto; padding: 12px 24px; background: #515a6d; color: white; border: none; border-radius: 25px; cursor: pointer; font-weight: bold; width: 80%; max-width: 300px; }
+    .admin-btn { display: none; margin: 5px auto; padding: 10px 20px; background: #888; color: white; border: none; border-radius: 20px; cursor: pointer; font-size: 0.9em; width: 70%; max-width: 280px; font-weight: bold; }
     .forgot-btn { display: block; margin: 5px auto; padding: 8px 20px; background: #e0e0e0; color: #666; border: none; border-radius: 20px; cursor: pointer; font-size: 0.9em; width: 60%; max-width: 250px; }
     
     .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #ffffff; color: #333; z-index: 1000; overflow-y: auto; padding: 20px; box-sizing: border-box; }
     .overlay-content { max-width: 500px; margin: 0 auto; text-align: left; }
     .close-btn { float: right; font-size: 2.5em; cursor: pointer; padding: 0 10px; color: #515a6d; }
     
-    #detailOverlay { background: #ffffff; color: #333; }
-    #detName { color: #515a6d; margin-bottom: 15px; border-bottom: 2px solid #515a6d; padding-bottom: 10px; }
-    
     .info-box { background: #d1d8e2; padding: 20px; border-radius: 12px; margin-bottom: 20px; }
     .info-row { margin-bottom: 15px; }
     .info-label { color: #444; font-size: 0.85em; text-transform: uppercase; font-weight: bold; display: block; margin-bottom: 2px; }
     .info-val { color: #333; font-size: 1.2em; }
-    .info-val-small { color: #333; font-size: 1em; }
     .bold { font-weight: bold; }
     
-    .history-box { background: #f8f9fa; border: 1px solid #ddd; padding: 15px; border-radius: 12px; }
-    .history-box h3 { margin-top: 0; color: #515a6d; font-size: 1em; border-bottom: 1px solid #eee; padding-bottom: 5px; }
-
-    #history-wrapper { margin-top: 20px; text-align: left; background: #fff; border-top: 1px solid #ccc; }
-    #history-toggle { width: 100%; padding: 12px; background: #f8f9fa; border: none; border-bottom: 1px solid #eee; font-weight: bold; cursor: pointer; color: #666; display: flex; justify-content: space-between; align-items: center; }
-    #history-content { display: none; max-height: 250px; overflow-y: auto; }
-    .history-item { font-size: 0.9em; padding: 10px; border-bottom: 1px solid #eee; }
-
     .idle { background: #f4f4f4; color: #333; }
     .loading-state { background: #d1d8e2; color: #666; }
     .success { background: #28a745; color: white; }
@@ -47,27 +36,20 @@
     .yellow { background: #ffc107; color: #333; }
     .error { background: #dc3545; color: white; }
     
-    .manual-area { margin: 15px; }
-    input { padding: 12px; border-radius: 8px; border: 2px solid #ccc; font-size: 1.1em; margin: 5px; }
+    input, select, textarea { width: 100%; padding: 12px; border-radius: 8px; border: 2px solid #ccc; font-size: 1.1em; margin-bottom: 10px; box-sizing: border-box; }
     button.main { padding: 12px 20px; background: #515a6d; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
-    .btn-group-view { padding: 8px 12px; background: #d1d8e2; color: #515a6d; border: none; border-radius: 6px; cursor: pointer; font-size: 0.8em; font-weight: bold; }
-    
-    .search-row { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
-    .search-result-item { padding: 15px; background: #f9f9f9; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
-
-    .unsorted-box { background: #eeeeee; padding: 15px; border-radius: 8px; margin-top: 25px; border: 1px dashed #ccc; }
     @keyframes blinker { 50% { opacity: 0.5; } }
   </style>
 </head>
 <body class="idle">
   <div id="header">
     <span>TSV EINLASSKONTROLLE</span>
-    <button class="btn-group-view" onclick="showTodayAttendance()">👥 Gruppenübersicht heute</button>
+    <button style="padding: 8px 12px; background: #d1d8e2; color: #515a6d; border: none; border-radius: 6px; cursor: pointer; font-size: 0.8em; font-weight: bold;" onclick="showTodayAttendance()">👥 Gruppenübersicht</button>
   </div>
   <div id="loader-container"><div id="loader-bar"></div></div>
   <div id="reader"></div>
   
-  <div class="manual-area">
+  <div style="margin: 15px;">
     <input type="text" id="manualId" placeholder="ID..." inputmode="numeric" style="width:100px;">
     <button class="main" onclick="checkManual()">Check</button>
   </div>
@@ -75,220 +57,212 @@
   <div id="result-container">
     <div id="result-text">Bereit</div>
     <button id="detailBtn" class="detail-btn" onclick="openDetails()">Mitgliedsdaten anzeigen</button>
+    <button id="adminBtn" class="admin-btn" onclick="openAdminOrder()">Verwaltungsauftrag erstellen</button>
     <button id="forgotBtn" class="forgot-btn" onclick="openSearch()">Ausweis vergessen</button>
     <div id="hint-box"></div>
   </div>
 
-  <div id="history-wrapper">
-    <button id="history-toggle" onclick="toggleHistory()">
-      <span>🕒 Letzte 10 Scans</span>
-      <span id="toggle-icon">▼</span>
+  <div id="history-wrapper" style="margin-top: 20px; text-align: left; background: #fff; border-top: 1px solid #ccc;">
+    <button id="history-toggle" onclick="toggleHistory()" style="width: 100%; padding: 12px; background: #f8f9fa; border: none; border-bottom: 1px solid #eee; font-weight: bold; cursor: pointer; color: #666; display: flex; justify-content: space-between;">
+      <span>🕒 Letzte 10 Scans</span><span>▼</span>
     </button>
-    <div id="history-content"><div id="history-list"></div></div>
+    <div id="history-content" style="display: none; max-height: 250px; overflow-y: auto;">
+      <div id="history-list"></div>
+    </div>
   </div>
 
   <div id="detailOverlay" class="overlay">
     <div class="overlay-content">
       <span class="close-btn" onclick="closeOverlay('detailOverlay')">&times;</span>
-      <h2 id="detName">Name</h2>
+      <h2 id="detName" style="color: #515a6d; border-bottom: 2px solid #515a6d; padding-bottom: 10px;">Name</h2>
       <div class="info-box">
         <div class="info-row"><span class="info-label">Geburtstag</span><span id="detDob" class="info-val bold">-</span></div>
         <div class="info-row"><span class="info-label">Alter</span><span id="detAge" class="info-val bold">-</span></div>
-        <div class="info-row"><span class="info-label">Spond-Gruppen</span><div id="detGroups" class="info-val-small" style="line-height: 1.6; padding-top: 5px;">Lade...</div></div>
+        <div class="info-row"><span class="info-label">Spond-Gruppen</span><div id="detGroups" style="font-size:1em; line-height:1.6;">Lade...</div></div>
       </div>
-      <div class="history-box">
-        <h3>Letzte Check-ins</h3>
-        <div id="detHistory" style="line-height: 1.8; color: #444; font-size: 0.95em;"></div>
-        <button id="loadArchiveBtn" onclick="loadArchiveHistory()" style="margin-top:10px; width:100%; padding:8px; background:#e0e0e0; border:1px solid #ccc; border-radius:8px; cursor:pointer; font-size:0.85em; color:#666;">+ Aus Archiv laden (letzte 6 Wochen)</button>
+      <div style="background: #f8f9fa; border: 1px solid #ddd; padding: 15px; border-radius: 12px;">
+        <h3 style="margin-top: 0; color: #515a6d; font-size: 1em;">Letzte Check-ins</h3>
+        <div id="detHistory"></div>
+        <button id="loadArchiveBtn" onclick="loadArchiveHistory()" style="margin-top:10px; width:100%; padding:8px; background:#e0e0e0; border:1px solid #ccc; border-radius:8px; cursor:pointer;">+ Aus Archiv laden</button>
       </div>
     </div>
   </div>
 
-  <div id="groupOverlay" class="overlay">
+  <div id="adminOverlay" class="overlay">
     <div class="overlay-content">
-      <span class="close-btn" onclick="closeOverlay('groupOverlay')">&times;</span>
-      <h2 style="color:#515a6d; margin-bottom:5px;">Anwesenheit heute</h2>
-      <div id="totalCount" style="font-weight:bold; color:#666; margin-bottom:20px;">Gesamt: 0</div>
-      <div id="groupContent"></div>
+      <span class="close-btn" onclick="closeOverlay('adminOverlay')">&times;</span>
+      <h2 style="color: #515a6d;">Verwaltungsauftrag</h2>
+      <p id="adminMemberInfo" style="font-weight: bold; color: #666;"></p>
+      
+      <label class="info-label">Auftragstyp</label>
+      <select id="orderType" onchange="updateOrderFields()">
+        <option value="">-- Bitte wählen --</option>
+        <option value="Neuausstellung Ausweis">Neuausstellung Ausweis</option>
+        <option value="Datenänderung">Datenänderung (Adresse/Kontakt)</option>
+        <option value="Dokumente">Ausstellung von Dokumenten</option>
+        <option value="Vorfall">Vorfall melden</option>
+        <option value="Sonstiges">Sonstiges Anliegen</option>
+      </select>
+
+      <div id="dynamicFields"></div>
+      
+      <button class="main" id="sendOrderBtn" onclick="sendOrder()" style="width: 100%; margin-top: 20px; background: #28a745;">Auftrag jetzt senden</button>
     </div>
   </div>
 
   <div id="searchOverlay" class="overlay">
     <div class="overlay-content">
       <span class="close-btn" onclick="closeOverlay('searchOverlay')">&times;</span>
-      <h2 style="color:#515a6d;">Mitglied suchen</h2>
-      <div class="search-row">
-        <input type="text" id="sVorname" placeholder="Vorname">
-        <input type="text" id="sNachname" placeholder="Nachname">
-        <input type="text" id="sGeburtstag" placeholder="Geburtstag (TT.MM.JJJJ)">
-        <button class="main" onclick="runSearch()">Suchen</button>
-      </div>
+      <h2 style="color:#515a6d;">Suchen</h2>
+      <input type="text" id="sVorname" placeholder="Vorname">
+      <input type="text" id="sNachname" placeholder="Nachname">
+      <input type="text" id="sGeburtstag" placeholder="Geburtstag (TT.MM.JJJJ)">
+      <button class="main" onclick="runSearch()" style="width:100%">Suchen</button>
       <div id="searchResults" style="margin-top:20px;"></div>
+    </div>
+  </div>
+
+  <div id="groupOverlay" class="overlay">
+    <div class="overlay-content">
+      <span class="close-btn" onclick="closeOverlay('groupOverlay')">&times;</span>
+      <h2 style="color:#515a6d;">Anwesenheit heute</h2>
+      <div id="totalCount" style="font-weight:bold; color:#666; margin-bottom:20px;"></div>
+      <div id="groupContent"></div>
     </div>
   </div>
 
   <script src="https://unpkg.com/html5-qrcode"></script>
   <script>
-    // --- KONFIGURATION ---
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyIZ_jMTEP5uaZDbQ2n0FMoJxaHypMfxtXr8TPTd6LcOPJU2po58ZWQYwa_LKTlQ1d1gA/exec";
-
-    let isLocked = false;
-    let currentMember = null;
-    let scanHistory = [];
-
+    let isLocked = false, currentMember = null, scanHistory = [];
     const html5QrCode = new Html5Qrcode("reader");
-    html5QrCode.start({ facingMode: "environment" }, { fps: 20, qrbox: 250 }, onScanSuccess);
-
-    function onScanSuccess(decodedText) { processId(decodedText); }
+    html5QrCode.start({ facingMode: "environment" }, { fps: 20, qrbox: 250 }, (t) => processId(t));
 
     function handleResponse(res) {
-      const body = document.body;
-      const resText = document.getElementById('result-text');
-      const detBtn = document.getElementById('detailBtn');
       document.getElementById('loader-container').style.display = "none";
-      
       if (res.found) {
         currentMember = res;
         updateHistory(res);
-        detBtn.style.display = "block";
-        if (res.type === "hint") { 
-          body.className = "yellow"; 
-          document.getElementById('hint-box').innerText = "⚠️ " + res.hint; 
-          document.getElementById('hint-box').style.display = "block"; 
-        } else { 
-          body.className = (res.type === "trainer") ? "blue" : "success"; 
-          document.getElementById('hint-box').style.display = "none"; 
+        document.getElementById('detailBtn').style.display = "block";
+        document.getElementById('adminBtn').style.display = "block";
+        if (res.type === "hint") {
+          document.body.className = "yellow";
+          document.getElementById('hint-box').innerText = "⚠️ " + res.hint;
+          document.getElementById('hint-box').style.display = "block";
+        } else {
+          document.body.className = (res.type === "trainer") ? "blue" : "success";
+          document.getElementById('hint-box').style.display = "none";
         }
-        resText.innerHTML = "✅ " + res.name;
+        document.getElementById('result-text').innerHTML = "✅ " + res.name;
       } else {
-        body.className = "error";
-        resText.innerHTML = "❌ ungültig: " + res.id;
-        detBtn.style.display = "none";
+        document.body.className = "error";
+        document.getElementById('result-text').innerHTML = "❌ ungültig: " + res.id;
       }
-      setTimeout(() => { if (resText.innerText !== "Lädt...") { body.className = "idle"; resText.innerText = "Bereit"; document.getElementById('hint-box').style.display = "none"; } }, 4000);
+      setTimeout(() => { if(document.getElementById('result-text').innerText !== "Lädt...") { document.body.className = "idle"; document.getElementById('result-text').innerText = "Bereit"; document.getElementById('hint-box').style.display = "none"; }}, 4000);
     }
 
     function processId(id) {
       if (!id || isLocked) return;
-      isLocked = true; setTimeout(() => { isLocked = false; }, 1000);
+      isLocked = true; setTimeout(() => isLocked = false, 1000);
       document.body.className = "loading-state";
       document.getElementById('result-text').innerText = "Lädt...";
       document.getElementById('loader-container').style.display = "block";
       document.getElementById('loader-bar').style.width = "100%";
-
-      fetch(`${SCRIPT_URL}?id=${id}`)
-        .then(r => r.json())
-        .then(handleResponse)
-        .catch(err => alert("Verbindungsfehler!"));
+      fetch(`${SCRIPT_URL}?id=${id}`).then(r => r.json()).then(handleResponse);
     }
 
     function openDetails() {
       if (!currentMember) return;
-      
-      // 1. Felder sofort zurücksetzen (Leeren), damit keine alten Daten flackern
       document.getElementById('detName').innerText = "Lade...";
-      document.getElementById('detDob').innerText = "...";
-      document.getElementById('detAge').innerText = "...";
-      document.getElementById('detGroups').innerText = "Lade...";
-      document.getElementById('detHistory').innerText = "Lade...";
-      
-      // Button-Zustand für Archiv zurücksetzen
-      document.getElementById('loadArchiveBtn').style.display = "block";
-      document.getElementById('loadArchiveBtn').innerText = "+ Aus Archiv laden (letzte 6 Wochen)";
-      document.getElementById('loadArchiveBtn').disabled = false;
-      
-      // Overlay anzeigen
       document.getElementById('detailOverlay').style.display = "block";
-      
-      // 2. Daten vom Server abrufen
       fetch(`${SCRIPT_URL}?action=details&id=${currentMember.id}&vn=${currentMember.firstName}&nn=${currentMember.lastName}`)
-        .then(r => r.json())
-        .then(details => {
-          // Felder mit echten Daten füllen
+        .then(r => r.json()).then(d => {
           document.getElementById('detName').innerText = currentMember.name;
-          document.getElementById('detDob').innerText = details.dob;
-          document.getElementById('detAge').innerText = details.age + " Jahre";
-          document.getElementById('detGroups').innerHTML = details.groups.length ? details.groups.join('<div style="height:8px;"></div>') : "Keine Gruppen";
-          document.getElementById('detHistory').innerHTML = details.history.length ? details.history.map(h => "• " + h + " Uhr").join('<br>') : "Noch kein Check-in heute.";
-        })
-        .catch(() => {
-          document.getElementById('detName').innerText = "Fehler beim Laden";
+          document.getElementById('detDob').innerText = d.dob;
+          document.getElementById('detAge').innerText = d.age + " Jahre";
+          document.getElementById('detGroups').innerHTML = d.groups.join('<br>');
+          document.getElementById('detHistory').innerHTML = d.history.map(h => "• " + h).join('<br>');
         });
     }
 
-    function loadArchiveHistory() {
-      const btn = document.getElementById('loadArchiveBtn');
-      btn.innerText = "Lade aus Archiv...";
-      btn.disabled = true;
-
-      fetch(`${SCRIPT_URL}?action=loadLogHistory&id=${currentMember.id}`)
-        .then(r => r.json())
-        .then(logHistory => {
-          if (logHistory.length === 0) {
-            btn.innerText = "Keine weiteren Einträge im Archiv";
-          } else {
-            const historyDiv = document.getElementById('detHistory');
-            let currentContent = historyDiv.innerHTML;
-            if (currentContent.includes("Noch kein Check-in heute.")) currentContent = "";
-            let archiveHtml = logHistory.map(h => "• " + h + " Uhr (Archiv)").join('<br>');
-            historyDiv.innerHTML = currentContent + (currentContent ? "<br>" : "") + archiveHtml;
-            btn.style.display = "none";
-          }
-        })
-        .catch(() => {
-          btn.innerText = "Fehler beim Laden";
-          btn.disabled = false;
-        });
+    function openAdminOrder() {
+      if (!currentMember) return;
+      document.getElementById('adminMemberInfo').innerText = "Mitglied: " + currentMember.name + " (ID: " + currentMember.id + ")";
+      document.getElementById('adminOverlay').style.display = "block";
+      document.getElementById('orderType').value = "";
+      document.getElementById('dynamicFields').innerHTML = "";
     }
 
-    function showTodayAttendance() {
-      document.getElementById('groupOverlay').style.display = "block";
-      document.getElementById('groupContent').innerHTML = "Lade...";
-      fetch(`${SCRIPT_URL}?action=getTodayAttendance`)
-        .then(r => r.json())
-        .then(data => {
-          document.getElementById('totalCount').innerText = "Gesamt eingecheckte Mitglieder: " + data.total;
-          let html = "";
-          let sortedGroups = Object.keys(data.groups).sort();
-          sortedGroups.forEach(group => {
-            html += `<div style="margin-bottom:20px;"><b style="color:#515a6d; font-size:1.1em; display:block; border-bottom: 1px solid #eee;">${group} <span style="color:#888; font-size:0.7em; font-weight:normal;">(${data.groups[group].length})</span></b><div style="font-size:0.95em; color:#444; padding-top:5px; line-height:1.4;">${data.groups[group].join('<br>')}</div></div>`;
-          });
-          if (data.unsorted && data.unsorted.length > 0) {
-            html += `<div class="unsorted-box"><b style="color:#666; font-size:1em; display:block; border-bottom: 1px solid #ddd; margin-bottom:5px;">Unsortiert (${data.unsorted.length})</b><div style="font-size:0.9em; color:#777; line-height:1.4;">${data.unsorted.join('<br>')}</div></div>`;
-          }
-          document.getElementById('groupContent').innerHTML = html || "Keine Daten.";
-        });
+    function updateOrderFields() {
+      const type = document.getElementById('orderType').value;
+      const container = document.getElementById('dynamicFields');
+      let html = "";
+      
+      if (type === "Neuausstellung Ausweis") {
+        html = `<select id="fFee"><option value="5,00 EUR Gebühr">Standard (5,00 EUR Gebühr)</option><option value="gebührenfrei">Kulanterweise gebührenfrei</option></select>
+                <textarea id="fNote" placeholder="Bemerkung (optional)"></textarea>`;
+      } else if (type === "Datenänderung") {
+        html = `<input type="text" id="fName" placeholder="Neuer Name (falls Änderung)">
+                <input type="text" id="fStreet" placeholder="Straße / Hausnr.">
+                <input type="text" id="fPlz" placeholder="PLZ / Ort">
+                <input type="text" id="fPhone" placeholder="Telefonnummer">
+                <input type="text" id="fMail" placeholder="E-Mail">
+                <textarea id="fNote" placeholder="Weitere Bemerkungen"></textarea>`;
+      } else if (type === "Dokumente") {
+        html = `<select id="fDoc"><option value="Mitgliedsbescheinigung">Bestätigung Mitgliedschaft</option><option value="Bildung & Teilhabe">Antrag Bildung & Teilhabe</option><option value="Sonstiges">Sonstiger Antrag (siehe Bemerkung)</option></select>
+                <textarea id="fNote" placeholder="Erläuterung / Bemerkung"></textarea>`;
+      } else if (type === "Vorfall") {
+        html = `<input type="text" id="fSubject" placeholder="Betreff">
+                <input type="text" id="fTime" placeholder="Zeitpunkt des Vorfalls">
+                <input type="text" id="fPlace" placeholder="Ort">
+                <input type="text" id="fPersons" placeholder="Betroffene Person(en)">
+                <textarea id="fNote" placeholder="Beschreibung des Vorfalls"></textarea>`;
+      } else if (type === "Sonstiges") {
+        html = `<select id="fTopic"><option value="Mitgliedschaft">Mitgliedschaft</option><option value="Kündigung">Kündigung</option><option value="Beiträge">Beiträge</option><option value="Aktivenumlage">Aktivenumlage</option><option value="Sonstiges">Sonstiges</option></select>
+                <input type="text" id="fSubject" placeholder="Betreff">
+                <textarea id="fNote" placeholder="Freitextfeld / Anliegen"></textarea>`;
+      }
+      container.innerHTML = html;
+    }
+
+    function sendOrder() {
+      const type = document.getElementById('orderType').value;
+      if(!type) { alert("Bitte Typ wählen!"); return; }
+      const btn = document.getElementById('sendOrderBtn');
+      btn.disabled = true; btn.innerText = "Sende...";
+
+      let details = "";
+      const fields = document.getElementById('dynamicFields').querySelectorAll('input, select, textarea');
+      fields.forEach(f => { if(f.value) details += f.placeholder || f.id.replace('f','') + ": " + f.value + "\n"; });
+
+      const payload = { memberId: currentMember.id, memberName: currentMember.name, type: type, details: details };
+
+      fetch(SCRIPT_URL + "?action=adminOrder", { method: 'POST', body: JSON.stringify(payload) })
+        .then(() => {
+          alert("Auftrag erfolgreich gesendet!");
+          closeOverlay('adminOverlay');
+          btn.disabled = false; btn.innerText = "Auftrag jetzt senden";
+        }).catch(() => alert("Fehler beim Senden."));
     }
 
     function openSearch() { document.getElementById('searchOverlay').style.display = "block"; }
     function runSearch() {
-      const vn = document.getElementById('sVorname').value;
-      const nn = document.getElementById('sNachname').value;
-      const dob = document.getElementById('sGeburtstag').value;
+      const vn = document.getElementById('sVorname').value, nn = document.getElementById('sNachname').value, dob = document.getElementById('sGeburtstag').value;
       document.getElementById('searchResults').innerHTML = "Suche...";
-      fetch(`${SCRIPT_URL}?action=search&vn=${vn}&nn=${nn}&dob=${dob}`)
-        .then(r => r.json())
-        .then(results => {
-          if (results.length === 0) { document.getElementById('searchResults').innerHTML = "Kein Mitglied gefunden."; return; }
-          document.getElementById('searchResults').innerHTML = results.map(r => `<div class="search-result-item"><div><b>${r.name}</b><br><small>${r.dob} (ID: ${r.id})</small></div><button class="main" style="padding:5px 10px; font-size:0.8em;" onclick="manualCheckIn('${r.id}')">Einchecken</button></div>`).join('');
-        });
+      fetch(`${SCRIPT_URL}?action=search&vn=${vn}&nn=${nn}&dob=${dob}`).then(r => r.json()).then(res => {
+        document.getElementById('searchResults').innerHTML = res.map(r => `<div style="padding:10px; border-bottom:1px solid #ddd; display:flex; justify-content:space-between;"><div><b>${r.name}</b><br><small>${r.dob}</small></div><button onclick="manualCheckIn('${r.id}')">Check</button></div>`).join('');
+      });
     }
 
-    function manualCheckIn(id) { 
-      // Leert die Suchfelder für das nächste Mal
-      document.getElementById('sVorname').value = "";
-      document.getElementById('sNachname').value = "";
-      document.getElementById('sGeburtstag').value = "";
-      document.getElementById('searchResults').innerHTML = "";
-
-      closeOverlay('searchOverlay'); 
-      processId(id); 
-      }
+    function manualCheckIn(id) {
+      document.getElementById('sVorname').value = ""; document.getElementById('sNachname').value = ""; document.getElementById('sGeburtstag').value = "";
+      closeOverlay('searchOverlay'); processId(id);
+    }
+    
     function closeOverlay(id) { document.getElementById(id).style.display = "none"; }
     function toggleHistory() { const c = document.getElementById('history-content'); c.style.display = (c.style.display === "block") ? "none" : "block"; }
-    function updateHistory(res) { scanHistory.unshift(res); if (scanHistory.length > 10) scanHistory.pop(); document.getElementById('history-list').innerHTML = scanHistory.map(item => `<div class="history-item"><b>#${item.id}</b> ${item.name}</div>`).join(''); }
+    function updateHistory(res) { scanHistory.unshift(res); if (scanHistory.length > 10) scanHistory.pop(); document.getElementById('history-list').innerHTML = scanHistory.map(item => `<div style="padding:10px; border-bottom:1px solid #eee;"><b>#${item.id}</b> ${item.name}</div>`).join(''); }
     function checkManual() { processId(document.getElementById('manualId').value); }
-    window.addEventListener('load', () => { fetch(`${SCRIPT_URL}?action=ping`).catch(() => {}); });
   </script>
 </body>
 </html>
