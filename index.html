@@ -1,40 +1,235 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
-  <title>TSV Einlasskontrolle</title>
-  <style>
-    :root { --bg-color: #f4f4f4; --text-color: #333; }
-    body { font-family: 'Segoe UI', sans-serif; text-align: center; margin: 0; background: var(--bg-color); color: var(--text-color); transition: background 0.3s; }
+<!DOCTYPE html> 
+<html> 
+<head> 
+  <meta charset="UTF-8"> 
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0"> 
+  <title>TSV Einlasskontrolle</title> 
+  <style> 
+    body { font-family: 'Segoe UI', sans-serif; text-align: center; margin: 0; transition: background 0.3s; min-height: 100vh; } 
+    #status-area { transition: background 0.3s; padding-bottom: 20px; }
+    #header { padding: 15px; background: #515a6d; color: white; font-weight: bold; font-size: 1.1em; display: flex; justify-content: space-between; align-items: center; } 
+    #reader { width: 100%; max-width: 400px; margin: 10px auto; border-radius: 12px; overflow: hidden; border: 4px solid #ccc; background: #000; } 
+    #loader-container { width: 100%; height: 8px; background: #ddd; display: none; } 
+    #loader-bar { width: 0%; height: 100%; background: #007bff; transition: width 0.2s; } 
     
-    /* NEU: Container für alles, was sich färben soll */
-    #status-wrapper { transition: background 0.3s; padding-bottom: 10px; }
-    
-    #header { padding: 15px; background: #515a6d; color: white; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
-    #reader { width: 100%; max-width: 350px; margin: 10px auto; border-radius: 12px; overflow: hidden; border: 3px solid #ccc; background: #000; }
-    
-    #result-text { font-size: 2em; font-weight: bold; padding: 15px; min-height: 1.2em; }
-    #hint-box { background: rgba(255,255,255,0.4); padding: 15px; border-radius: 12px; font-size: 1.3em; font-weight: bold; display: none; margin: 5px 15px; border: 2px solid white; animation: blinker 1.5s linear infinite; }
-    
-    /* Buttons & Inputs */
-    .forgot-btn { width: 90%; max-width: 320px; padding: 15px; background: #ffcc00; color: #333; border: 2px solid #e6b800; border-radius: 12px; cursor: pointer; font-size: 1.1em; font-weight: bold; margin-top: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-    .main-btn { padding: 12px 20px; background: #515a6d; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
-    
-    /* Bereich: Aktuelles Mitglied (bleibt neutral) */
-    #option-section { display: none; padding: 20px; background: #ffffff; border-top: 5px solid #515a6d; margin-top: 0; box-shadow: 0 -4px 10px rgba(0,0,0,0.05); }
-    .current-label { font-size: 0.8em; color: #888; text-transform: uppercase; }
-    .current-name { font-size: 1.6em; font-weight: bold; color: #515a6d; margin: 5px 0 20px 0; display: block; }
-    .action-btn { width: 100%; max-width: 300px; padding: 15px; background: #515a6d; color: white; border: none; border-radius: 25px; cursor: pointer; font-weight: bold; margin-bottom: 10px; font-size: 1em; }
-    .admin-btn { background: #8e94a1; }
+    #result-container { padding: 20px; min-height: 100px; } 
+    #result-text { font-size: 2.2em; font-weight: bold; line-height: 1.1; } 
+    #hint-box { background: rgba(255,255,255,0.25); padding: 15px; border-radius: 12px; font-size: 1.4em; font-weight: bold; display: none; margin: 10px auto; max-width: 600px; border: 3px solid white; animation: blinker 1.5s linear infinite; } 
 
-    /* Farbstände für den Wrapper */
-    .bg-success { background: #28a745 !important; color: white !important; }
-    .bg-blue { background: #007bff !important; color: white !important; }
-    .bg-yellow { background: #ffc107 !important; color: #333 !important; }
-    .bg-error { background: #dc3545 !important; color: white !important; }
+    /* Unterer Bereich: Aktuelles Mitglied */
+    #current-member-section { display: none; background: #f8f9fa; padding: 25px; border-top: 5px solid #515a6d; }
+    .current-name-display { font-size: 1.8em; font-weight: bold; color: #333; margin-bottom: 15px; display: block; }
+    .action-btn { width: 100%; max-width: 320px; padding: 14px; background: #515a6d; color: white; border: none; border-radius: 25px; cursor: pointer; font-weight: bold; margin-bottom: 10px; font-size: 1.05em; }
+    .admin-btn { background: #888; }
+    
+    /* Original-Styles V3 */
+    .forgot-btn { display: block; margin: 15px auto; padding: 10px 20px; background: #ffcc00; color: #333; border: 1px solid #ccaa00; border-radius: 20px; cursor: pointer; font-weight: bold; width: 70%; max-width: 250px; } 
+    .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #ffffff; color: #333; z-index: 1000; overflow-y: auto; padding: 20px; box-sizing: border-box; } 
+    .overlay-content { max-width: 500px; margin: 0 auto; text-align: left; } 
+    .close-btn { float: right; font-size: 2.5em; cursor: pointer; padding: 0 10px; color: #515a6d; } 
+    .info-box { background: #d1d8e2; padding: 20px; border-radius: 12px; margin-bottom: 20px; } 
+    .history-box { background: #f8f9fa; border: 1px solid #ddd; padding: 15px; border-radius: 12px; } 
+    #history-wrapper { margin-top: 0px; text-align: left; background: #fff; border-top: 1px solid #ccc; } 
+    #history-toggle { width: 100%; padding: 12px; background: #f8f9fa; border: none; border-bottom: 1px solid #eee; font-weight: bold; cursor: pointer; color: #666; display: flex; justify-content: space-between; align-items: center; } 
+    #history-content { display: none; max-height: 250px; overflow-y: auto; } 
+    .history-item { font-size: 0.9em; padding: 10px; border-bottom: 1px solid #eee; } 
 
-    /* Gruppenübersicht Table Style */
+    .idle { background: #f4f4f4; color: #333; } 
+    .success { background: #28a745; color: white; } 
+    .blue { background: #007bff; color: white; } 
+    .yellow { background: #ffc107; color: #333; } 
+    .error { background: #dc3545; color: white; } 
+    
+    input { padding: 12px; border-radius: 8px; border: 2px solid #ccc; font-size: 1.1em; margin: 5px; } 
+    button.main { padding: 12px 20px; background: #515a6d; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; } 
+    @keyframes blinker { 50% { opacity: 0.5; } } 
+    .loader { border: 4px solid #f3f3f3; border-top: 4px solid #515a6d; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; display: inline-block; vertical-align: middle; margin-right: 10px; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  </style> 
+</head> 
+<body class="idle"> 
+  <div id="status-area">
+    <div id="header"> 
+      <span>TSV EINLASSKONTROLLE</span> 
+      <button style="padding: 8px 12px; background: #d1d8e2; color: #515a6d; border: none; border-radius: 6px; cursor: pointer; font-size: 0.8em; font-weight: bold;" onclick="showTodayAttendance()">👥 Gruppen</button> 
+    </div> 
+    <div id="loader-container"><div id="loader-bar"></div></div> 
+    <div id="reader"></div> 
+    
+    <div style="margin: 15px;"> 
+      <input type="text" id="manualId" placeholder="ID..." inputmode="numeric" style="width:100px;"> 
+      <button class="main" onclick="checkManual()">Check</button> 
+    </div> 
+
+    <div id="result-container"> 
+      <div id="result-text">Bereit</div> 
+      <div id="hint-box"></div> 
+    </div> 
+    <button class="forgot-btn" onclick="openSearch()">🔎 AUSWEIS VERGESSEN / SUCHE</button> 
+  </div>
+
+  <div id="current-member-section">
+    <span style="font-size: 0.8em; color: #666; text-transform: uppercase;">Zuletzt erkannt:</span>
+    <span id="currentNameDisplay" class="current-name-display">-</span>
+    <button class="action-btn" onclick="openDetails()">Mitgliedsdaten anzeigen</button><br>
+    <button class="action-btn admin-btn" onclick="openAdminOrder()">Verwaltungsauftrag erstellen</button>
+  </div>
+
+  <div id="history-wrapper"> 
+    <button id="history-toggle" onclick="toggleHistory()"> 
+      <span>🕒 Letzte 10 Scans</span> <span>▼</span> 
+    </button> 
+    <div id="history-content"><div id="history-list"></div></div> 
+  </div> 
+
+  <div id="detailOverlay" class="overlay"><div class="overlay-content">
+      <span class="close-btn" onclick="closeOverlay('detailOverlay')">&times;</span> 
+      <h2 id="detName">Name</h2> 
+      <div class="info-box"> 
+        <div><b>Geburtstag:</b> <span id="detDob">-</span></div> 
+        <div><b>Alter:</b> <span id="detAge">-</span></div> 
+        <div style="margin-top:10px;"><b>Gruppen:</b><br><div id="detGroups">Lade...</div></div> 
+      </div> 
+      <div class="history-box"><h3>Letzte Check-ins</h3><div id="detHistory"></div></div>
+  </div></div>
+
+  <div id="adminOverlay" class="overlay"><div class="overlay-content">
+      <span class="close-btn" onclick="closeOverlay('adminOverlay')">&times;</span>
+      <h2>Verwaltungsauftrag</h2>
+      <p id="adminMemberInfo" style="font-weight:bold;"></p>
+      <select id="orderType" style="width:100%; padding:12px; margin-bottom:15px;" onchange="updateAdminFields()">
+        <option value="">-- Typ wählen --</option>
+        <option value="Neuausstellung Ausweis">Neuausstellung Ausweis</option>
+        <option value="Seepferdchen">Seepferdchen Dokument</option>
+        <option value="TRIXI">TRIXI Dokument</option>
+        <option value="Bronze">Bronze Dokument</option>
+        <option value="Silber">Silber Dokument</option>
+        <option value="Gold">Gold Dokument</option>
+        <option value="Datenänderung">Datenänderung</option>
+        <option value="Sonstiges">Sonstiges</option>
+      </select>
+      <textarea id="adminNote" style="width:100%; height:100px;" placeholder="Bemerkung..."></textarea>
+      <button class="main" id="sendOrderBtn" onclick="sendOrder()" style="width:100%; margin-top:15px; background:#28a745;">Senden</button>
+  </div></div>
+
+  <div id="groupOverlay" class="overlay"><div class="overlay-content">
+      <span class="close-btn" onclick="closeOverlay('groupOverlay')">&times;</span> 
+      <h2 id="groupTitle">Gruppen heute</h2> 
+      <div id="totalCount" style="font-weight:bold; margin-bottom:15px;"></div> 
+      <div id="groupContent"></div> 
+  </div></div>
+
+  <div id="searchOverlay" class="overlay"><div class="overlay-content">
+      <span class="close-btn" onclick="closeOverlay('searchOverlay')">&times;</span> 
+      <h2>Mitglied suchen</h2> 
+      <input type="text" id="sVorname" placeholder="Vorname"> 
+      <input type="text" id="sNachname" placeholder="Nachname"> 
+      <input type="text" id="sGeburtstag" placeholder="Geburtstag (TT.MM.JJJJ)"> 
+      <button class="main" onclick="runSearch()">Suchen</button> 
+      <div id="searchResults" style="margin-top:20px;"></div> 
+  </div></div>
+
+  <script src="https://unpkg.com/html5-qrcode"></script> 
+  <script> 
+    const SCRIPT_URL = "DEINE_SCRIPT_URL_HIER"; 
+    let currentMember = null, scanHistory = [], isLocked = false; 
+
+    const html5QrCode = new Html5Qrcode("reader"); 
+    html5QrCode.start({ facingMode: "environment" }, { fps: 20, qrbox: 250 }, (t) => processId(t)); 
+
+    function handleResponse(res) { 
+      const area = document.getElementById('status-area'); 
+      const text = document.getElementById('result-text'); 
+      document.getElementById('loader-container').style.display = "none"; 
+      
+      if (res.found) { 
+        currentMember = res; 
+        updateHistory(res); 
+        document.getElementById('current-member-section').style.display = "block";
+        document.getElementById('currentNameDisplay').innerText = res.name;
+        
+        if (res.type === "hint") { 
+          area.className = "yellow"; 
+          document.getElementById('hint-box').innerText = "⚠️ " + res.hint; 
+          document.getElementById('hint-box').style.display = "block"; 
+        } else { 
+          area.className = (res.type.includes("Trainer")) ? "blue" : "success"; 
+          document.getElementById('hint-box').style.display = "none"; 
+        } 
+        text.innerHTML = "✅ " + res.name; 
+      } else { 
+        area.className = "error"; 
+        text.innerHTML = "❌ ungültig: " + res.id; 
+      } 
+      setTimeout(() => { if (text.innerText !== "Lädt...") { area.className = "idle"; text.innerText = "Bereit"; document.getElementById('hint-box').style.display = "none"; } }, 4000); 
+    } 
+
+    function processId(id) { 
+      if (!id || isLocked) return; 
+      isLocked = true; setTimeout(() => isLocked = false, 1500); 
+      document.getElementById('status-area').className = "idle"; 
+      document.getElementById('result-text').innerText = "Lädt..."; 
+      document.getElementById('loader-container').style.display = "block"; 
+      fetch(`${SCRIPT_URL}?id=${id}`).then(r => r.json()).then(handleResponse).catch(() => alert("Fehler!")); 
+    } 
+
+    function openDetails() { 
+      if (!currentMember) return; 
+      document.getElementById('detailOverlay').style.display = "block"; 
+      document.getElementById('detName').innerText = "Lade..."; 
+      fetch(`${SCRIPT_URL}?action=details&id=${currentMember.id}&vn=${currentMember.firstName}&nn=${currentMember.lastName}`) 
+        .then(r => r.json()).then(d => { 
+          document.getElementById('detName').innerText = currentMember.name; 
+          document.getElementById('detDob').innerText = d.dob; 
+          document.getElementById('detAge').innerText = d.age + " Jahre"; 
+          document.getElementById('detGroups').innerHTML = d.groups.join('<br>') || "Keine"; 
+          document.getElementById('detHistory').innerHTML = d.history.join('<br>') || "Keine Check-ins heute"; 
+        }); 
+    } 
+
+    function openAdminOrder() {
+      if (!currentMember) return;
+      document.getElementById('adminMemberInfo').innerText = "Auftrag für: " + currentMember.name;
+      document.getElementById('adminOverlay').style.display = "block";
+    }
+
+    function sendOrder() {
+      const type = document.getElementById('orderType').value;
+      if (!type) return alert("Bitte Typ wählen!");
+      const btn = document.getElementById('sendOrderBtn');
+      btn.disabled = true; btn.innerHTML = '<div class="loader"></div> Sende...';
+      const payload = { memberId: currentMember.id, memberName: currentMember.name, type: type, details: document.getElementById('adminNote').value };
+      fetch(SCRIPT_URL + "?action=adminOrder", { method: 'POST', body: JSON.stringify(payload) })
+        .then(() => { alert("Gesendet!"); closeOverlay('adminOverlay'); btn.disabled = false; btn.innerText = "Senden"; });
+    }
+
+    function showTodayAttendance() { 
+      document.getElementById('groupOverlay').style.display = "block"; 
+      document.getElementById('groupContent').innerHTML = '<div class="loader"></div> Lade Daten...'; 
+      fetch(`${SCRIPT_URL}?action=getTodayAttendance`).then(r => r.json()).then(data => { 
+        document.getElementById('totalCount').innerText = "Gesamt: " + data.total; 
+        let h = ""; for (let g in data.groups) h += `<div style="margin-bottom:15px;"><b>${g} (${data.groups[g].length})</b><br><small>${data.groups[g].join(', ')}</small></div>`; 
+        document.getElementById('groupContent').innerHTML = h || "Keine Daten."; 
+      }); 
+    } 
+
+    function runSearch() { 
+      const vn = document.getElementById('sVorname').value, nn = document.getElementById('sNachname').value, dob = document.getElementById('sGeburtstag').value; 
+      document.getElementById('searchResults').innerHTML = '<div class="loader"></div> Suche...'; 
+      fetch(`${SCRIPT_URL}?action=search&vn=${vn}&nn=${nn}&dob=${dob}`).then(r => r.json()).then(results => { 
+        if (!results.length) { document.getElementById('searchResults').innerHTML = "Nichts gefunden."; return; } 
+        document.getElementById('searchResults').innerHTML = results.map(r => `<div style="padding:10px; border-bottom:1px solid #ddd;"><b>${r.name}</b><br><button class="main" style="padding:4px 8px; font-size:0.8em;" onclick="manualCheckIn('${r.id}')">Einchecken</button></div>`).join(''); 
+      }); 
+    } 
+
+    function manualCheckIn(id) { closeOverlay('searchOverlay'); processId(id); } 
+    function updateHistory(res) { scanHistory.unshift(res); if (scanHistory.length > 10) scanHistory.pop(); document.getElementById('history-list').innerHTML = scanHistory.map(item => `<div class="history-item"><b>#${item.id}</b> ${item.name}</div>`).join(''); } 
+    function toggleHistory() { const c = document.getElementById('history-content'); c.style.display = (c.style.display === "block") ? "none" : "block"; } 
+    function checkManual() { processId(document.getElementById('manualId').value); } 
+    function closeOverlay(id) { document.getElementById(id).style.display = "none"; } 
+  </script> 
+</body> 
+</html>    /* Gruppenübersicht Table Style */
     .group-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; background: white; }
     .group-header { background: #007bff; color: white; padding: 10px; text-align: left; font-size: 1.1em; }
     .group-row { border-bottom: 1px solid #eee; }
@@ -128,7 +323,7 @@
 
   <script src="https://unpkg.com/html5-qrcode"></script>
   <script>
-    const SCRIPT_URL = "DEINE_SCRIPT_URL_HIER"; // WICHTIG: URL EINSETZEN
+    const SCRIPT_URL = "ttps://script.google.com/macros/s/AKfycbyIZ_jMTEP5uaZDbQ2n0FMoJxaHypMfxtXr8TPTd6LcOPJU2po58ZWQYwa_LKTlQ1d1gA/exec"; // WICHTIG: URL EINSETZEN
     let currentMember = null;
     let isLocked = false;
 
