@@ -5,36 +5,241 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
   <title>TSV Einlasskontrolle</title>
   <style>
-    body { font-family: 'Segoe UI', sans-serif; text-align: center; margin: 0; transition: background 0.3s; min-height: 100vh; overflow-x: hidden; background: #f4f4f4; }
-    #header { padding: 15px; background: #515a6d; color: white; font-weight: bold; font-size: 1.1em; display: flex; justify-content: space-between; align-items: center; }
+    :root { --bg-color: #f4f4f4; --text-color: #333; }
+    body { font-family: 'Segoe UI', sans-serif; text-align: center; margin: 0; background: var(--bg-color); color: var(--text-color); transition: background 0.3s; }
     
-    /* Eingabebereich */
-    .input-section { background: white; padding: 10px; border-bottom: 2px solid #ddd; }
-    #reader { width: 100%; max-width: 350px; margin: 5px auto; border-radius: 12px; overflow: hidden; border: 3px solid #ccc; background: #000; }
+    /* NEU: Container für alles, was sich färben soll */
+    #status-wrapper { transition: background 0.3s; padding-bottom: 10px; }
     
-    /* Statusbereich */
-    #status-section { padding: 20px; min-height: 80px; transition: all 0.3s; }
-    #result-text { font-size: 2.2em; font-weight: bold; line-height: 1.1; margin-bottom: 10px; }
-    #hint-box { background: rgba(255,255,255,0.3); padding: 15px; border-radius: 12px; font-size: 1.4em; font-weight: bold; display: none; margin: 10px auto; max-width: 600px; border: 3px solid white; animation: blinker 1.5s linear infinite; }
+    #header { padding: 15px; background: #515a6d; color: white; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
+    #reader { width: 100%; max-width: 350px; margin: 10px auto; border-radius: 12px; overflow: hidden; border: 3px solid #ccc; background: #000; }
     
-    /* Optionsbereich (Unten abgetrennt) */
-    #option-section { display: none; margin-top: 10px; padding: 20px; background: #e9ecef; border-top: 2px solid #ced4da; }
-    .current-name-label { font-size: 0.9em; color: #666; text-transform: uppercase; margin-bottom: 5px; display: block; }
-    .current-name-display { font-size: 1.5em; font-weight: bold; color: #333; margin-bottom: 15px; display: block; }
+    #result-text { font-size: 2em; font-weight: bold; padding: 15px; min-height: 1.2em; }
+    #hint-box { background: rgba(255,255,255,0.4); padding: 15px; border-radius: 12px; font-size: 1.3em; font-weight: bold; display: none; margin: 5px 15px; border: 2px solid white; animation: blinker 1.5s linear infinite; }
+    
+    /* Buttons & Inputs */
+    .forgot-btn { width: 90%; max-width: 320px; padding: 15px; background: #ffcc00; color: #333; border: 2px solid #e6b800; border-radius: 12px; cursor: pointer; font-size: 1.1em; font-weight: bold; margin-top: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    .main-btn { padding: 12px 20px; background: #515a6d; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
+    
+    /* Bereich: Aktuelles Mitglied (bleibt neutral) */
+    #option-section { display: none; padding: 20px; background: #ffffff; border-top: 5px solid #515a6d; margin-top: 0; box-shadow: 0 -4px 10px rgba(0,0,0,0.05); }
+    .current-label { font-size: 0.8em; color: #888; text-transform: uppercase; }
+    .current-name { font-size: 1.6em; font-weight: bold; color: #515a6d; margin: 5px 0 20px 0; display: block; }
+    .action-btn { width: 100%; max-width: 300px; padding: 15px; background: #515a6d; color: white; border: none; border-radius: 25px; cursor: pointer; font-weight: bold; margin-bottom: 10px; font-size: 1em; }
+    .admin-btn { background: #8e94a1; }
 
-    /* Buttons */
-    .detail-btn { width: 100%; max-width: 300px; padding: 14px; background: #515a6d; color: white; border: none; border-radius: 25px; cursor: pointer; font-weight: bold; margin-bottom: 10px; font-size: 1em; }
-    .admin-btn { width: 100%; max-width: 300px; padding: 12px; background: #888; color: white; border: none; border-radius: 25px; cursor: pointer; font-weight: bold; font-size: 0.9em; }
-    .forgot-btn { width: 100%; max-width: 300px; padding: 8px; background: transparent; color: #666; border: 1px solid #ccc; border-radius: 20px; cursor: pointer; font-size: 0.85em; margin-top: 10px; }
+    /* Farbstände für den Wrapper */
+    .bg-success { background: #28a745 !important; color: white !important; }
+    .bg-blue { background: #007bff !important; color: white !important; }
+    .bg-yellow { background: #ffc107 !important; color: #333 !important; }
+    .bg-error { background: #dc3545 !important; color: white !important; }
+
+    /* Gruppenübersicht Table Style */
+    .group-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; background: white; }
+    .group-header { background: #007bff; color: white; padding: 10px; text-align: left; font-size: 1.1em; }
+    .group-row { border-bottom: 1px solid #eee; }
+    .group-cell { padding: 8px 12px; text-align: left; font-size: 0.95em; }
     
-    /* Overlays & Rest */
-    .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #ffffff; color: #333; z-index: 1000; overflow-y: auto; padding: 20px; box-sizing: border-box; }
-    .overlay-content { max-width: 500px; margin: 0 auto; text-align: left; }
-    .close-btn { float: right; font-size: 2.5em; cursor: pointer; padding: 0 10px; color: #515a6d; }
-    input, select, textarea { width: 100%; padding: 12px; border-radius: 8px; border: 2px solid #ccc; font-size: 1.1em; margin-bottom: 10px; box-sizing: border-box; }
-    button.main { padding: 12px 20px; background: #515a6d; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+    /* Overlay */
+    .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 1000; overflow-y: auto; padding: 20px; box-sizing: border-box; }
+    .close-btn { float: right; font-size: 2.5em; cursor: pointer; color: #515a6d; }
+    @keyframes blinker { 50% { opacity: 0.5; } }
     
-    .idle { background: #f4f4f4; color: #333; }
+    /* Spinner */
+    .loader { border: 5px solid #f3f3f3; border-top: 5px solid #515a6d; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 20px auto; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+  <div id="status-wrapper">
+    <div id="header">
+      <span>TSV EINLASSKONTROLLE</span>
+      <button class="main-btn" style="font-size: 0.8em;" onclick="showTodayAttendance()">👥 Gruppen</button>
+    </div>
+
+    <div id="reader"></div>
+    
+    <div style="margin: 10px 0;">
+      <input type="text" id="manualId" placeholder="ID..." inputmode="numeric" style="width:80px; padding:10px; border-radius:8px; border:1px solid #ccc;">
+      <button class="main-btn" onclick="checkManual()">Check</button>
+    </div>
+
+    <div id="result-text">Bereit</div>
+    <div id="hint-box"></div>
+    
+    <button class="forgot-btn" onclick="openSearch()">🔎 AUSWEIS VERGESSEN / SUCHE</button>
+  </div>
+
+  <div id="option-section">
+    <div class="current-label">Gewähltes Mitglied:</div>
+    <div id="currentNameDisplay" class="current-name">-</div>
+    <button class="action-btn" onclick="openDetails()">Mitgliedsdaten anzeigen</button><br>
+    <button class="action-btn admin-btn" onclick="openAdminOrder()">Verwaltungsauftrag erstellen</button>
+  </div>
+
+  <div id="detailOverlay" class="overlay">
+    <span class="close-btn" onclick="closeOverlay('detailOverlay')">&times;</span>
+    <h2 id="detName">Name</h2>
+    <div id="detailContent">
+      <p><b>Geburtstag:</b> <span id="detDob">-</span></p>
+      <p><b>Alter:</b> <span id="detAge">-</span></p>
+      <p><b>Spond-Gruppen:</b><br><span id="detGroups">-</span></p>
+      <hr>
+      <h3>Letzte Check-ins</h3>
+      <div id="detHistory"></div>
+    </div>
+  </div>
+
+  <div id="adminOverlay" class="overlay">
+    <span class="close-btn" onclick="closeOverlay('adminOverlay')">&times;</span>
+    <h2>Verwaltungsauftrag</h2>
+    <p id="adminMemberInfo"></p>
+    <select id="orderType" onchange="updateOrderFields()" style="width:100%; padding:12px; margin-bottom:15px;">
+      <option value="">-- Auftragstyp wählen --</option>
+      <option value="Neuausstellung Ausweis">Neuausstellung Ausweis</option>
+      <option value="Datenänderung">Datenänderung</option>
+      <option value="Seepferdchen">Seepferdchen-Dokument</option>
+      <option value="TRIXI">TRIXI-Dokument</option>
+      <option value="Bronze">Bronze-Dokument</option>
+      <option value="Silber">Silber-Dokument</option>
+      <option value="Gold">Gold-Dokument</option>
+      <option value="Sonstiges">Sonstiges</option>
+    </select>
+    <div id="dynamicFields"></div>
+    <button class="main-btn" id="sendOrderBtn" onclick="sendOrder()" style="width:100%; background:#28a745; margin-top:15px;">Senden</button>
+  </div>
+
+  <div id="groupOverlay" class="overlay">
+    <span class="close-btn" onclick="closeOverlay('groupOverlay')">&times;</span>
+    <h2>Gruppen heute</h2>
+    <div id="groupLoader" class="loader"></div>
+    <div id="groupContent"></div>
+  </div>
+
+  <div id="searchOverlay" class="overlay">
+    <span class="close-btn" onclick="closeOverlay('searchOverlay')">&times;</span>
+    <h2>Suche</h2>
+    <input type="text" id="sVN" placeholder="Vorname" style="width:90%; padding:10px; margin-bottom:10px;">
+    <input type="text" id="sNN" placeholder="Nachname" style="width:90%; padding:10px; margin-bottom:10px;">
+    <button class="main-btn" onclick="runSearch()" style="width:90%">Suchen</button>
+    <div id="searchResults" style="margin-top:20px;"></div>
+  </div>
+
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <script>
+    const SCRIPT_URL = "DEINE_SCRIPT_URL_HIER"; // WICHTIG: URL EINSETZEN
+    let currentMember = null;
+    let isLocked = false;
+
+    const html5QrCode = new Html5Qrcode("reader");
+    html5QrCode.start({ facingMode: "environment" }, { fps: 15, qrbox: 250 }, (t) => processId(t));
+
+    function processId(id) {
+      if (!id || isLocked) return;
+      isLocked = true; setTimeout(() => isLocked = false, 2000);
+      
+      const wrapper = document.getElementById('status-wrapper');
+      const text = document.getElementById('result-text');
+      
+      text.innerText = "Prüfe...";
+      fetch(`${SCRIPT_URL}?id=${id}`).then(r => r.json()).then(res => {
+        wrapper.className = ""; // Reset
+        document.getElementById('hint-box').style.display = "none";
+
+        if (res.found) {
+          currentMember = res;
+          document.getElementById('option-section').style.display = "block";
+          document.getElementById('currentNameDisplay').innerText = res.name;
+          text.innerHTML = "✅ " + res.name;
+
+          if (res.type === "trainer") wrapper.classList.add('bg-blue');
+          else if (res.type === "hint") {
+            wrapper.classList.add('bg-yellow');
+            document.getElementById('hint-box').innerText = "⚠️ " + res.hint;
+            document.getElementById('hint-box').style.display = "block";
+          }
+          else wrapper.classList.add('bg-success');
+        } else {
+          wrapper.classList.add('bg-error');
+          text.innerHTML = "❌ Unbekannt";
+        }
+        
+        setTimeout(() => { 
+           wrapper.className = ""; 
+           text.innerText = "Bereit";
+           document.getElementById('hint-box').style.display = "none";
+        }, 5000);
+      });
+    }
+
+    function openDetails() {
+      if (!currentMember) return;
+      document.getElementById('detailOverlay').style.display = "block";
+      document.getElementById('detName').innerText = "Lädt...";
+      fetch(`${SCRIPT_URL}?action=details&id=${currentMember.id}&vn=${currentMember.firstName}&nn=${currentMember.lastName}`)
+        .then(r => r.json()).then(d => {
+          document.getElementById('detName').innerText = currentMember.name;
+          document.getElementById('detDob').innerText = d.dob;
+          document.getElementById('detAge').innerText = d.age + " Jahre";
+          document.getElementById('detGroups').innerText = d.groups.join(", ") || "Keine Gruppen";
+          document.getElementById('detHistory').innerHTML = d.history.join("<br>") || "Keine Einträge";
+        });
+    }
+
+    function showTodayAttendance() {
+      document.getElementById('groupOverlay').style.display = "block";
+      document.getElementById('groupContent').innerHTML = "";
+      document.getElementById('groupLoader').style.display = "block";
+      fetch(`${SCRIPT_URL}?action=getTodayAttendance`).then(r => r.json()).then(data => {
+        document.getElementById('groupLoader').style.display = "none";
+        let html = `<h3>Gesamt: ${data.total}</h3>`;
+        for (let g in data.groups) {
+          html += `<table class="group-table">
+            <tr><th class="group-header">${g} (${data.groups[g].length})</th></tr>`;
+          data.groups[g].forEach(m => {
+            html += `<tr class="group-row"><td class="group-cell">${m}</td></tr>`;
+          });
+          html += `</table>`;
+        }
+        document.getElementById('groupContent').innerHTML = html;
+      });
+    }
+
+    function updateOrderFields() {
+      const type = document.getElementById('orderType').value;
+      const container = document.getElementById('dynamicFields');
+      container.innerHTML = (type) ? `<textarea id="fNote" style="width:100%; height:80px;" placeholder="Zusätzliche Infos oder Bemerkungen..."></textarea>` : "";
+    }
+
+    function sendOrder() {
+      const type = document.getElementById('orderType').value;
+      if (!type) return alert("Typ wählen!");
+      const note = document.getElementById('fNote') ? document.getElementById('fNote').value : "";
+      const payload = { memberId: currentMember.id, memberName: currentMember.name, type: type, details: note };
+      fetch(SCRIPT_URL + "?action=adminOrder", { method: 'POST', body: JSON.stringify(payload) })
+        .then(() => { alert("Erfolgreich gesendet!"); closeOverlay('adminOverlay'); });
+    }
+
+    function runSearch() {
+      const vn = document.getElementById('sVN').value;
+      const nn = document.getElementById('sNN').value;
+      fetch(`${SCRIPT_URL}?action=search&vn=${vn}&nn=${nn}`).then(r => r.json()).then(res => {
+        document.getElementById('searchResults').innerHTML = res.map(r => 
+          `<div style="padding:10px; border-bottom:1px solid #ddd; display:flex; justify-content:space-between;">
+             <span>${r.name}</span>
+             <button class="main-btn" onclick="manualCheckIn('${r.id}')">Wählen</button>
+           </div>`).join('');
+      });
+    }
+
+    function manualCheckIn(id) { closeOverlay('searchOverlay'); processId(id); }
+    function checkManual() { processId(document.getElementById('manualId').value); }
+    function openSearch() { document.getElementById('searchOverlay').style.display = "block"; }
+    function closeOverlay(id) { document.getElementById(id).style.display = "none"; }
+  </script>
+</body>
+</html>    .idle { background: #f4f4f4; color: #333; }
     .success { background: #28a745; color: white; }
     .blue { background: #007bff; color: white; }
     .yellow { background: #ffc107; color: #333; }
